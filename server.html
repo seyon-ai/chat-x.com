@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatX - Servers</title>
+    <style>
+        :root {
+            --primary: #7289da;
+            --dark: #36393f;
+            --darker: #2f3136;
+            --darkest: #202225;
+            --light: #dcddde;
+            --lighter: #ffffff;
+            --success: #3ba55c;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--darkest);
+            color: var(--light);
+            height: 100vh;
+            display: flex;
+        }
+        
+        /* Sidebar styles */
+        .sidebar {
+            width: 72px;
+            background-color: var(--darker);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 0;
+            border-right: 1px solid var(--darkest);
+        }
+        
+        .server-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: var(--dark);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: border-radius 0.2s, background-color 0.2s;
+        }
+        
+        .server-icon:hover {
+            border-radius: 16px;
+            background-color: var(--primary);
+        }
+        
+        .server-icon.active {
+            border-radius: 16px;
+            background-color: var(--primary);
+        }
+        
+        .server-icon img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .server-icon .initial {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--light);
+        }
+        
+        .divider {
+            width: 32px;
+            height: 2px;
+            background-color: var(--dark);
+            margin: 8px 0;
+            border-radius: 1px;
+        }
+        
+        .add-server {
+            background-color: var(--dark);
+            color: var(--light);
+        }
+        
+        .add-server:hover {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        /* Main content */
+        .main {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .header {
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: var(--lighter);
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: var(--light);
+            opacity: 0.7;
+        }
+        
+        /* Server cards */
+        .servers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .server-card {
+            background-color: var(--darker);
+            border-radius: 8px;
+            padding: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        
+        .server-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .server-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--lighter);
+        }
+        
+        .server-description {
+            color: var(--light);
+            opacity: 0.8;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .server-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--light);
+            opacity: 0.6;
+        }
+        
+        /* Create server modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: var(--dark);
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+        }
+        
+        .modal-header {
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--lighter);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--light);
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--darker);
+            border: 1px solid var(--darkest);
+            border-radius: 4px;
+            color: var(--light);
+        }
+        
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            border: none;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: var(--darker);
+            color: var(--light);
+            margin-right: 10px;
+        }
+        
+        /* Profile header */
+        .profile-header {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background-color: var(--darker);
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: auto;
+            width: fit-content;
+        }
+        
+        .profile-header:hover {
+            background-color: var(--dark);
+        }
+        
+        .profile-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 8px;
+            object-fit: cover;
+        }
+        
+        .profile-username {
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        /* X bubble menu */
+        .x-bubble {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            transition: transform 0.2s;
+        }
+        
+        .x-bubble:hover {
+            transform: scale(1.1);
+        }
+        
+        .x-bubble span {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+        
+        .empty-text {
+            color: var(--light);
+            opacity: 0.7;
+            margin-bottom: 20px;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--darkest);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--darker);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--dark);
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="server-icon">
+            <span class="initial">G</span>
+        </div>
+        <div class="server-icon active">
+            <span class="initial">S</span>
+        </div>
+        <div class="divider"></div>
+        <div class="server-icon add-server" id="add-server-btn">
+            <span class="initial">+</span>
+        </div>
+    </div>
+    
+    <!-- Main content -->
+    <div class="main">
+        <div class="header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>Your Servers</h1>
+                    <p class="subtitle">Create or join servers to connect with people</p>
+                </div>
+                <div class="profile-header" id="profile-header">
+                    <img class="profile-avatar" id="current-user-avatar" src="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='12' r='8' fill='%237289da'/%3E%3Ccircle cx='16' cy='32' r='16' fill='%237289da'/%3E%3C/svg%3E" alt="Profile">
+                    <span class="profile-username" id="current-user-name">Username</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="servers-grid" id="servers-container">
+            <!-- Servers will be added here dynamically -->
+            <div class="empty-state" id="empty-state">
+                <div class="empty-icon">🏰</div>
+                <h3>No Servers Yet</h3>
+                <p class="empty-text">Create your first server or join one to get started</p>
+                <button class="btn btn-primary" id="create-first-server">Create Server</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create Server Modal -->
+    <div class="modal" id="create-server-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Create New Server</h2>
+            </div>
+            <form id="create-server-form">
+                <div class="form-group">
+                    <label for="server-name" class="form-label">Server Name</label>
+                    <input type="text" id="server-name" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="server-description" class="form-label">Description (Optional)</label>
+                    <textarea id="server-description" class="form-input form-textarea"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancel-create-server">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Server</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- X bubble menu -->
+    <div class="x-bubble" id="x-bubble">
+        <span>X</span>
+    </div>
+
+    <script type="module">
+        // Firebase configuration and initialization
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, push, set, onValue, off } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getStorage, ref as storageRef, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC029g_8WDBRNoHbMpM0JJ_W4PzSb-bJ7U",
+            authDomain: "chatx-cfb20.firebaseapp.com",
+            databaseURL: "https://chatx-cfb20-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "chatx-cfb20",
+            storageBucket: "chatx-cfb20.appspot.com",
+            messagingSenderId: "707787260350",
+            appId: "1:707787260350:web:32d4826826d3e6ad93f9ef"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        const storage = getStorage(app);
+
+        // DOM elements
+        const serversContainer = document.getElementById('servers-container');
+        const emptyState = document.getElementById('empty-state');
+        const addServerBtn = document.getElementById('add-server-btn');
+        const createFirstServerBtn = document.getElementById('create-first-server');
+        const createServerModal = document.getElementById('create-server-modal');
+        const cancelCreateServerBtn = document.getElementById('cancel-create-server');
+        const createServerForm = document.getElementById('create-server-form');
+        const serverNameInput = document.getElementById('server-name');
+        const serverDescriptionInput = document.getElementById('server-description');
+        const currentUserAvatar = document.getElementById('current-user-avatar');
+        const currentUserName = document.getElementById('current-user-name');
+        const profileHeader = document.getElementById('profile-header');
+        const xBubble = document.getElementById('x-bubble');
+
+        // Variables
+        let userId = null;
+        let username = '';
+        let avatarUrl = '';
+
+        // Initialize the app
+        function init() {
+            // Check auth state
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    userId = user.uid;
+                    loadUserProfile();
+                    loadServers();
+                } else {
+                    // Not logged in, redirect to index
+                    window.location.href = 'index.html';
+                }
+            });
+            
+            // Event listeners
+            addServerBtn.addEventListener('click', showCreateServerModal);
+            createFirstServerBtn.addEventListener('click', showCreateServerModal);
+            cancelCreateServerBtn.addEventListener('click', hideCreateServerModal);
+            createServerForm.addEventListener('submit', createServer);
+            profileHeader.addEventListener('click', () => {
+                window.location.href = 'profile.html';
+            });
+            xBubble.addEventListener('click', () => {
+                window.location.href = 'chatx.html';
+            });
+        }
+        
+        // Load user profile
+        function loadUserProfile() {
+            const userRef = ref(db, `users/${userId}`);
+            
+            onValue(userRef, (snapshot) => {
+                const userData = snapshot.val();
+                if (userData) {
+                    username = userData.username;
+                    avatarUrl = userData.avatar;
+                    
+                    // Update UI
+                    currentUserName.textContent = username;
+                    if (avatarUrl) {
+                        currentUserAvatar.src = avatarUrl;
+                    }
+                }
+            });
+        }
+        
+        // Load servers
+        function loadServers() {
+            const serversRef = ref(db, `servers`);
+            
+            onValue(serversRef, (snapshot) => {
+                serversContainer.innerHTML = '';
+                const servers = snapshot.val();
+                
+                if (servers) {
+                    let hasServers = false;
+                    
+                    Object.keys(servers).forEach(serverId => {
+                        const server = servers[serverId];
+                        
+                        // Check if user is owner or member
+                        if (server.owner === userId || (server.members && server.members[userId])) {
+                            hasServers = true;
+                            addServerToUI(serverId, server);
+                        }
+                    });
+                    
+                    if (!hasServers) {
+                        serversContainer.appendChild(emptyState);
+                        emptyState.style.display = 'block';
+                    } else {
+                        emptyState.style.display = 'none';
+                    }
+                } else {
+                    serversContainer.appendChild(emptyState);
+                    emptyState.style.display = 'block';
+                }
+            });
+        }
+        
+        // Add server to UI
+        function addServerToUI(serverId, server) {
+            const serverCard = document.createElement('div');
+            serverCard.className = 'server-card';
+            
+            serverCard.innerHTML = `
+                <div class="server-name">${server.name}</div>
+                <div class="server-description">${server.description || 'No description provided'}</div>
+                <div class="server-meta">
+                    <span>${Object.keys(server.members || {}).length + 1} members</span>
+                    <span>Owner: ${server.ownerName || 'Unknown'}</span>
+                </div>
+            `;
+            
+            serverCard.addEventListener('click', () => {
+                // Redirect to group page with server ID
+                window.location.href = `group.html?server=${serverId}`;
+            });
+            
+            serversContainer.appendChild(serverCard);
+        }
+        
+        // Show create server modal
+        function showCreateServerModal() {
+            createServerModal.style.display = 'flex';
+            serverNameInput.focus();
+        }
+        
+        // Hide create server modal
+        function hideCreateServerModal() {
+            createServerModal.style.display = 'none';
+            createServerForm.reset();
+        }
+        
+        // Create server
+        function createServer(e) {
+            e.preventDefault();
+            
+            const name = serverNameInput.value.trim();
+            const description = serverDescriptionInput.value.trim();
+            
+            if (name) {
+                const serversRef = ref(db, 'servers');
+                const newServerRef = push(serversRef);
+                
+                set(newServerRef, {
+                    name: name,
+                    description: description,
+                    owner: userId,
+                    ownerName: username,
+                    createdAt: Date.now(),
+                    members: {
+                        [userId]: true
+                    }
+                }).then(() => {
+                    hideCreateServerModal();
+                }).catch(error => {
+                    console.error('Error creating server:', error);
+                    alert('Failed to create server');
+                });
+            }
+        }
+        
+        // Initialize the app
+        init();
+    </script>
+</body>
+</html>
