@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ChatX - Servers</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #0d0d0d;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      background: #1a1a1a;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #222;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: bold;
+      color: #00ffe7;
+    }
+
+    .back-btn {
+      background: #00ffe7;
+      color: #0d0d0d;
+      font-weight: bold;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .container {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    h2 {
+      font-size: 18px;
+      margin-bottom: 10px;
+      color: #00ffe7;
+    }
+
+    input {
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      background: #222;
+      color: #fff;
+      margin-right: 10px;
+    }
+
+    button {
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      background: #00ffe7;
+      color: #0d0d0d;
+      font-weight: bold;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background: #1a1a1a;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    li:hover {
+      background: #222;
+    }
+
+    .link {
+      font-size: 12px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">ChatX - Servers</div>
+    <button class="back-btn" onclick="window.location.href='chatx.html'">Back</button>
+  </header>
+
+  <div class="container">
+    <div class="section">
+      <h2>Create New Server</h2>
+      <input type="text" id="serverName" placeholder="Server Name">
+      <button id="createBtn">Create</button>
+    </div>
+
+    <div class="section">
+      <h2>Join Server</h2>
+      <input type="text" id="joinCode" placeholder="Paste Join Link">
+      <button id="joinBtn">Join</button>
+    </div>
+
+    <div class="section">
+      <h2>My Servers</h2>
+      <ul id="myServers"></ul>
+    </div>
+
+    <div class="section">
+      <h2>Joined Servers</h2>
+      <ul id="joinedServers"></ul>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, push, set, onValue, child, get, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC029g_8WDBRNoHbMpM0JJ_W4PzSb-bJ7U",
+      authDomain: "chatx-cfb20.firebaseapp.com",
+      databaseURL: "https://chatx-cfb20-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "chatx-cfb20",
+      storageBucket: "chatx-cfb20.appspot.com",
+      messagingSenderId: "707787260350",
+      appId: "1:707787260350:web:32d4826826d3e6ad93f9ef"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const user = JSON.parse(localStorage.getItem("chatxUser"));
+    if (!user) window.location.href = "index.html";
+
+    const serverNameInput = document.getElementById("serverName");
+    const createBtn = document.getElementById("createBtn");
+    const joinCodeInput = document.getElementById("joinCode");
+    const joinBtn = document.getElementById("joinBtn");
+    const myServersList = document.getElementById("myServers");
+    const joinedServersList = document.getElementById("joinedServers");
+
+    // Create server
+    createBtn.addEventListener("click", async () => {
+      const name = serverNameInput.value.trim();
+      if (!name) return alert("Enter a server name");
+
+      const serverRef = push(ref(db, "servers"));
+      const serverId = serverRef.key;
+      const joinLink = "§/" + name.replace(/\s+/g, "-").toLowerCase() + "-" + serverId;
+
+      await set(serverRef, {
+        id: serverId,
+        name,
+        owner: user.uid,
+        members: { [user.uid]: true },
+        joinLink
+      });
+
+      // Save to user's server list
+      await set(ref(db, "userServers/" + user.uid + "/" + serverId), true);
+
+      alert("Server created! Join link: " + joinLink);
+      serverNameInput.value = "";
+    });
+
+    // Join server
+    joinBtn.addEventListener("click", async () => {
+      const link = joinCodeInput.value.trim();
+      if (!link.startsWith("§/")) return alert("Invalid join link");
+
+      // Find server by joinLink
+      const serversSnap = await get(ref(db, "servers"));
+      if (serversSnap.exists()) {
+        let found = null;
+        serversSnap.forEach(snap => {
+          if (snap.val().joinLink === link) {
+            found = snap.val();
+          }
+        });
+        if (found) {
+          await update(ref(db, "servers/" + found.id + "/members"), { [user.uid]: true });
+          await set(ref(db, "userJoinedServers/" + user.uid + "/" + found.id), true);
+          alert("Joined server: " + found.name);
+          joinCodeInput.value = "";
+        } else {
+          alert("Server not found");
+        }
+      }
+    });
+
+    // Load my servers
+    onValue(ref(db, "userServers/" + user.uid), async (snapshot) => {
+      myServersList.innerHTML = "";
+      if (snapshot.exists()) {
+        for (const serverId in snapshot.val()) {
+          const serverSnap = await get(ref(db, "servers/" + serverId));
+          if (serverSnap.exists()) {
+            const server = serverSnap.val();
+            const li = document.createElement("li");
+            li.textContent = server.name;
+            li.innerHTML += `<div class='link'>${server.joinLink}</div>`;
+            li.addEventListener("click", () => {
+              localStorage.setItem("currentServer", JSON.stringify(server));
+              window.location.href = "group.html";
+            });
+            myServersList.appendChild(li);
+          }
+        }
+      }
+    });
+
+    // Load joined servers
+    onValue(ref(db, "userJoinedServers/" + user.uid), async (snapshot) => {
+      joinedServersList.innerHTML = "";
+      if (snapshot.exists()) {
+        for (const serverId in snapshot.val()) {
+          const serverSnap = await get(ref(db, "servers/" + serverId));
+          if (serverSnap.exists()) {
+            const server = serverSnap.val();
+            const li = document.createElement("li");
+            li.textContent = server.name;
+            li.innerHTML += `<div class='link'>${server.joinLink}</div>`;
+            li.addEventListener("click", () => {
+              localStorage.setItem("currentServer", JSON.stringify(server));
+              window.location.href = "group.html";
+            });
+            joinedServersList.appendChild(li);
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
